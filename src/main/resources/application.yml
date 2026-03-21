@@ -1,0 +1,69 @@
+spring:
+  application:
+    name: automation-bot-whatsapp-omie
+  config:
+    import: optional:file:./application-local.yml
+
+  datasource:
+    # Seu servidor já estava certo na intenção; o driver Java só aceita jdbc:postgresql:// (não postgresql://).
+    # Supabase precisa de sslmode=require na URL.
+    url: jdbc:postgresql://db.rzvdnjmwffvlqxkbhres.supabase.co:5432/postgres?sslmode=require
+    username: postgres
+    # Senha: variável SPRING_DATASOURCE_PASSWORD ou spring.datasource.password em application-local.yml (raiz, gitignore)
+    password: ${SPRING_DATASOURCE_PASSWORD:16Q2amsxfJVPmB5L}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+    show-sql: false
+
+server:
+  port: 8080
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: method
+
+logging:
+  level:
+    com.whatsappomie: INFO
+
+app:
+  scheduler:
+    reenvio-ms: 3600000
+    expiracao-ms: 600000
+
+  # WhatsApp: mock | twilio (credenciais em variáveis ou application-local.yml)
+  bot:
+    # Se preenchido, POST /api/bot/disparar-boas-vindas exige header X-Bot-Key com o mesmo valor
+    disparo-api-key: ${BOT_DISPARO_API_KEY:}
+
+  whatsapp:
+    provider: ${WHATSAPP_PROVIDER:mock}
+    twilio:
+      account-sid: ${TWILIO_ACCOUNT_SID:}
+      auth-token: ${TWILIO_AUTH_TOKEN:}
+      # Sandbox: whatsapp:+14155238886 | produção: seu número aprovado pela Meta/Twilio
+      from-number: ${TWILIO_WHATSAPP_FROM:}
+
+  # Omie: use variáveis de ambiente ou application-local.yml (gitignore). Nunca commite app-key/app-secret.
+  omie:
+    enabled: false
+    app-key: ${OMIE_APP_KEY:}
+    app-secret: ${OMIE_APP_SECRET:}
+    base-url: https://app.omie.com.br/api/v1
+    pedido-compra-path: /produtos/pedidocompra/
+    pedido-compra:
+      # nCodFor do fornecedor no Omie (obrigatório quando enabled=true)
+      fornecedor-codigo: ${OMIE_N_COD_FOR:}
+      # nCodCC opcional; se vazio, enviamos 0 no cabeçalho
+      conta-corrente-codigo: ${OMIE_N_COD_CC:}

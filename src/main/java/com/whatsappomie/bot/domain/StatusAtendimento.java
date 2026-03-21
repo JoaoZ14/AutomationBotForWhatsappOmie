@@ -1,0 +1,12 @@
+package com.whatsappomie.bot.domain;
+
+public enum StatusAtendimento {
+    INICIADO,
+    AGUARDANDO_CONFIRMACAO,
+    AGUARDANDO_ESCOLHA_TIPO,
+    AGUARDANDO_PRODUTO,
+    AGUARDANDO_QUANTIDADE,
+    AGUARDANDO_CONFIRMACAO_PEDIDO,
+    FINALIZADO,
+    EXPIRADO
+}

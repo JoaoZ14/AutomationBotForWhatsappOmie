@@ -1,0 +1,13 @@
+/target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+.idea
+*.iml
+.project
+.classpath
+.settings/
+*.log
+
+# Credenciais locais (use spring.config.import=optional:file:./application-local.yml ou variáveis de ambiente)
+application-local.yml
