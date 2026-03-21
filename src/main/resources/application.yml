@@ -9,7 +9,8 @@ spring:
     #   postgresql://postgres:SENHA@db.<ref>.supabase.co:5432/postgres
     # (substitua SENHA; caracteres especiais na senha → URL-encode). Isso é convertido para JDBC no main.
     # Opcional: SPRING_DATASOURCE_URL em jdbc:postgresql://...?sslmode=require OU no mesmo formato URI acima.
-    # Se "Network is unreachable", use no Supabase pooler (Session) ou add-on IPv4.
+    # Se "Network is unreachable" ou UnknownHost no db.*.supabase.co: no Render use pooler (Session) ou IPv4 no Supabase.
+    # Confira no painel se o <ref> do host bate com o projeto (projeto pausado/apagado → DNS some).
     # Abaixo: JDBC só para fallback local; o env DATABASE_URL tem precedência (DatabaseUrlEnvironmentSetup).
     url: jdbc:postgresql://db.rzvdnjmwffvlqxkbhres.supabase.co:5432/postgres?sslmode=require
     username: ${SPRING_DATASOURCE_USERNAME:postgres}
