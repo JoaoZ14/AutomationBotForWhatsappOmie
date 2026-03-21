@@ -11,6 +11,8 @@ spring:
     password: ${SPRING_DATASOURCE_PASSWORD:}
 
   jpa:
+    # Evita "Unable to determine Dialect without JDBC metadata" quando metadados JDBC não estão disponíveis no bootstrap.
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
       ddl-auto: update
     open-in-view: false
