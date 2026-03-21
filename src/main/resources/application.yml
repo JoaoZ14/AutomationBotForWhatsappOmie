@@ -5,18 +5,21 @@ spring:
     import: optional:file:./application-local.yml
 
   datasource:
-    # URL efetiva: DatabaseUrlEnvironmentSetup no main (SPRING_DATASOURCE_URL vazia no Render).
-    # Deploy Render: se o log mostrar "Network is unreachable" ao conectar no Supabase, o host db.*.supabase.co
-    # pode ser só IPv6. Corrija com uma destas opções no painel Supabase (Database → Connect):
-    # - Connection pooling → modo Session (host ...pooler.supabase.com, porta do painel), ou
-    # - Add-on IPv4 para conexão direta.
-    # Defina SPRING_DATASOURCE_URL ou DATABASE_URL com essa URI; credenciais em segredo.
+    # Em produção (ex.: Render): defina DATABASE_URL exatamente como no Supabase, por exemplo:
+    #   postgresql://postgres:SENHA@db.<ref>.supabase.co:5432/postgres
+    # (substitua SENHA; caracteres especiais na senha → URL-encode). Isso é convertido para JDBC no main.
+    # Opcional: SPRING_DATASOURCE_URL em jdbc:postgresql://...?sslmode=require OU no mesmo formato URI acima.
+    # Se "Network is unreachable", use no Supabase pooler (Session) ou add-on IPv4.
+    # Abaixo: JDBC só para fallback local; o env DATABASE_URL tem precedência (DatabaseUrlEnvironmentSetup).
     url: jdbc:postgresql://db.rzvdnjmwffvlqxkbhres.supabase.co:5432/postgres?sslmode=require
     username: ${SPRING_DATASOURCE_USERNAME:postgres}
     password: ${SPRING_DATASOURCE_PASSWORD:}
     driver-class-name: org.postgresql.Driver
 
   jpa:
+    # Obrigatório quando o Hibernate não consegue ler metadados JDBC na subida (ex.: falha de rede);
+    # sem isso: "Unable to determine Dialect without JDBC metadata".
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
       ddl-auto: update
     open-in-view: false

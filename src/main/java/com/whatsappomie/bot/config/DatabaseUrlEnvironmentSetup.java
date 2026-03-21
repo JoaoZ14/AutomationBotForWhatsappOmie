@@ -9,7 +9,8 @@ import java.nio.charset.StandardCharsets;
  * default do YAML e o Hibernate falha. Aqui definimos {@code spring.datasource.url} em
  * {@link System#setProperty} antes do boot, com precedência correta.
  *
- * <p>Ordem: {@code SPRING_DATASOURCE_URL} preenchida → {@code DATABASE_URL} (postgres://) → JDBC
+ * <p>Ordem: {@code SPRING_DATASOURCE_URL} (JDBC ou {@code postgresql://user:pass@host:port/db}) →
+ * {@code DATABASE_URL} no formato Supabase {@code postgresql://postgres:senha@host:5432/postgres} → JDBC
  * Supabase por defeito.
  *
  * <p>Render + Supabase: erro {@code Network is unreachable} na conexão direta costuma ser IPv6 vs IPv4.
@@ -49,7 +50,14 @@ public final class DatabaseUrlEnvironmentSetup {
     private static void resolveDataSourceUrl() {
         String explicit = firstNonBlank(System.getenv("SPRING_DATASOURCE_URL"));
         if (explicit != null) {
-            System.setProperty("spring.datasource.url", explicit);
+            if (isPostgresUriScheme(explicit)) {
+                Parsed p = parsePostgresDatabaseUrl(explicit);
+                System.setProperty("spring.datasource.url", p.jdbcUrl());
+                setIfEnvBlank("SPRING_DATASOURCE_USERNAME", "spring.datasource.username", p.username());
+                setIfEnvBlank("SPRING_DATASOURCE_PASSWORD", "spring.datasource.password", p.password());
+            } else {
+                System.setProperty("spring.datasource.url", explicit);
+            }
             return;
         }
         String databaseUrl = firstNonBlank(System.getenv("DATABASE_URL"));
@@ -98,8 +106,32 @@ public final class DatabaseUrlEnvironmentSetup {
         String jdbc = "jdbc:postgresql://" + host + ":" + port + "/" + db;
         if (query != null && !query.isEmpty()) {
             jdbc += "?" + query;
+            if (!queryContainsSslMode(query)) {
+                jdbc += "&sslmode=require";
+            }
+        } else {
+            jdbc += "?sslmode=require";
         }
         return new Parsed(jdbc, user, pass);
+    }
+
+    private static boolean isPostgresUriScheme(String s) {
+        String t = s.trim().toLowerCase();
+        return t.startsWith("postgres://") || t.startsWith("postgresql://");
+    }
+
+    private static boolean queryContainsSslMode(String query) {
+        for (String part : query.split("&")) {
+            String name = part;
+            int eq = part.indexOf('=');
+            if (eq > 0) {
+                name = part.substring(0, eq);
+            }
+            if ("sslmode".equalsIgnoreCase(name.trim())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static String urlDecode(String s) {
