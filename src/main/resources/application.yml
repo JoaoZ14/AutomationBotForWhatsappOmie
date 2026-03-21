@@ -12,9 +12,9 @@ spring:
     # Se "Network is unreachable" ou UnknownHost no db.*.supabase.co: no Render use pooler (Session) ou IPv4 no Supabase.
     # Confira no painel se o <ref> do host bate com o projeto (projeto pausado/apagado → DNS some).
     # Abaixo: JDBC só para fallback local; o env DATABASE_URL tem precedência (DatabaseUrlEnvironmentSetup).
-    url: jdbc:postgresql://db.rzvdnjmwffvlqxkbhres.supabase.co:5432/postgres?sslmode=require
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://db.rzvdnjmwffvlqxkbhres.supabase.co:5432/postgres?sslmode=require}
     username: ${SPRING_DATASOURCE_USERNAME:postgres}
-    password: ${SPRING_DATASOURCE_PASSWORD:}
+    password: ${SPRING_DATASOURCE_PASSWORD:16Q2amsxfJVPmB5L}
     driver-class-name: org.postgresql.Driver
 
   jpa:
