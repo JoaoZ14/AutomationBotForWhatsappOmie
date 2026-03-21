@@ -5,14 +5,12 @@ spring:
     import: optional:file:./application-local.yml
 
   datasource:
-    # Render: defina SPRING_DATASOURCE_URL (jdbc:postgresql://...) e credenciais nas env vars.
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/postgres}
-    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    # Local (IDE): H2 em memória. Render/produção: SPRING_DATASOURCE_URL=jdbc:postgresql://... + user/senha.
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://db.rzvdnjmwffvlqxkbhres.supabase.co:6543/postgres?sslmode=require&prepareThreshold=0}
+    username: ${SPRING_DATASOURCE_USERNAME:sa}
     password: ${SPRING_DATASOURCE_PASSWORD:}
-    driver-class-name: org.postgresql.Driver
 
   jpa:
-    database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
       ddl-auto: update
     open-in-view: false

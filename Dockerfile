@@ -15,4 +15,5 @@ COPY --from=build /app/target/automation-bot-0.0.1-SNAPSHOT.jar .
 
 EXPOSE 8080
 
-CMD ["java", "-XX:+UseContainerSupport", "-XX:MaxRAMPercentage=70.0", "-XX:+UseG1GC", "-XX:MaxGCPauseMillis=200", "-XX:+ExitOnOutOfMemoryError", "-Djava.security.egd=file:/dev/./urandom", "-jar", "automation-bot-0.0.1-SNAPSHOT.jar"]
+# preferIPv4Stack: evita "Network is unreachable" em alguns hosts (ex.: Render → Supabase) quando o Java tenta IPv6 primeiro.
+CMD ["java", "-Djava.net.preferIPv4Stack=true", "-XX:+UseContainerSupport", "-XX:MaxRAMPercentage=70.0", "-XX:+UseG1GC", "-XX:MaxGCPauseMillis=200", "-XX:+ExitOnOutOfMemoryError", "-Djava.security.egd=file:/dev/./urandom", "-jar", "automation-bot-0.0.1-SNAPSHOT.jar"]
