@@ -6,24 +6,44 @@ import java.nio.charset.StandardCharsets;
 
 /**
  * Render pode enviar {@code SPRING_DATASOURCE_URL} vazio ({@code ""}); nesse caso o Spring ignora o
- * default do YAML e o Hibernate falha. Aqui definimos {@code spring.datasource.url} (e dialecto) em
+ * default do YAML e o Hibernate falha. Aqui definimos {@code spring.datasource.url} em
  * {@link System#setProperty} antes do boot, com precedência correta.
  *
  * <p>Ordem: {@code SPRING_DATASOURCE_URL} preenchida → {@code DATABASE_URL} (postgres://) → JDBC
  * Supabase por defeito.
+ *
+ * <p>Render + Supabase: erro {@code Network is unreachable} na conexão direta costuma ser IPv6 vs IPv4.
+ * Use no Supabase a string do <strong>pooler (Session)</strong> ou add-on IPv4; passe-a por env, não pelo
+ * default em código.
  */
 public final class DatabaseUrlEnvironmentSetup {
 
     private static final String DEFAULT_JDBC =
             "jdbc:postgresql://db.rzvdnjmwffvlqxkbhres.supabase.co:5432/postgres?sslmode=require";
 
-    private static final String PG_DIALECT = "org.hibernate.dialect.PostgreSQLDialect";
-
     private DatabaseUrlEnvironmentSetup() {}
 
     public static void apply() {
         resolveDataSourceUrl();
-        System.setProperty("spring.jpa.database-platform", PG_DIALECT);
+        requirePostgresPasswordIfNeeded();
+    }
+
+    /**
+     * Evita NPE obscuro no Hibernate ao falhar JDBC: sem senha a conexão quebra e a stack some confusa.
+     */
+    private static void requirePostgresPasswordIfNeeded() {
+        String url = System.getProperty("spring.datasource.url");
+        if (url == null || !url.startsWith("jdbc:postgresql:")) {
+            return;
+        }
+        String fromProp = firstNonBlank(System.getProperty("spring.datasource.password"));
+        String fromEnv = firstNonBlank(System.getenv("SPRING_DATASOURCE_PASSWORD"));
+        if (fromProp != null || fromEnv != null) {
+            return;
+        }
+        throw new IllegalStateException(
+                "PostgreSQL sem senha: defina SPRING_DATASOURCE_PASSWORD no ambiente ou use DATABASE_URL "
+                        + "com user:password@ (Render/Supabase).");
     }
 
     private static void resolveDataSourceUrl() {

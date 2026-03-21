@@ -12,5 +12,7 @@ RUN groupadd --system spring && useradd --system --gid spring spring
 COPY --from=build /app/target/automation-bot-*.jar app.jar
 USER spring:spring
 EXPOSE 8080
-ENV JAVA_TOOL_OPTIONS=""
+# Render (IPv4) + Supabase direct (às vezes só IPv6): ajuda se o DNS tiver A e AAAA; se ainda falhar,
+# use no painel Supabase a URI do pooler (Session) ou o add-on IPv4 — ver application.yml.
+ENV JAVA_TOOL_OPTIONS="-Djava.net.preferIPv4Stack=true"
 ENTRYPOINT ["java", "-jar", "app.jar"]

@@ -5,20 +5,23 @@ spring:
     import: optional:file:./application-local.yml
 
   datasource:
-    # URL efetiva: DatabaseUrlEnvironmentSetup corre no main (trata SPRING_DATASOURCE_URL vazia no Render).
+    # URL efetiva: DatabaseUrlEnvironmentSetup no main (SPRING_DATASOURCE_URL vazia no Render).
+    # Deploy Render: se o log mostrar "Network is unreachable" ao conectar no Supabase, o host db.*.supabase.co
+    # pode ser só IPv6. Corrija com uma destas opções no painel Supabase (Database → Connect):
+    # - Connection pooling → modo Session (host ...pooler.supabase.com, porta do painel), ou
+    # - Add-on IPv4 para conexão direta.
+    # Defina SPRING_DATASOURCE_URL ou DATABASE_URL com essa URI; credenciais em segredo.
     url: jdbc:postgresql://db.rzvdnjmwffvlqxkbhres.supabase.co:5432/postgres?sslmode=require
     username: ${SPRING_DATASOURCE_USERNAME:postgres}
     password: ${SPRING_DATASOURCE_PASSWORD:}
     driver-class-name: org.postgresql.Driver
 
   jpa:
-    database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
       ddl-auto: update
     open-in-view: false
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
     show-sql: false
 
