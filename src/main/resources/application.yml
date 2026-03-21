@@ -5,10 +5,11 @@ spring:
     import: optional:file:./application-local.yml
 
   datasource:
-    # Local (IDE): H2 em memória. Render/produção: SPRING_DATASOURCE_URL=jdbc:postgresql://... + user/senha.
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://db.rzvdnjmwffvlqxkbhres.supabase.co:6543/postgres?sslmode=require&prepareThreshold=0}
-    username: ${SPRING_DATASOURCE_USERNAME:sa}
-    password: ${SPRING_DATASOURCE_PASSWORD:}
+    # Produção: use JDBC (jdbc:postgresql://...). Aceita DATABASE_* (Render Postgres) ou SPRING_DATASOURCE_*.
+    # Não use URL vazia: senão o placeholder "vence" e o Hibernate perde metadados/dialeto.
+    url: ${DATABASE_URL:${SPRING_DATASOURCE_URL:jdbc:postgresql://db.rzvdnjmwffvlqxkbhres.supabase.co:6543/postgres?sslmode=require&prepareThreshold=0}}
+    username: ${DATABASE_USERNAME:${SPRING_DATASOURCE_USERNAME:postgres}}
+    password: ${DATABASE_PASSWORD:${SPRING_DATASOURCE_PASSWORD:}}
 
   jpa:
     # Evita "Unable to determine Dialect without JDBC metadata" quando metadados JDBC não estão disponíveis no bootstrap.
@@ -18,6 +19,8 @@ spring:
     open-in-view: false
     properties:
       hibernate:
+        # Garante o dialeto no persistence unit (alguns setups só leem isto, não spring.jpa.database-platform).
+        dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
     show-sql: false
 
