@@ -5,21 +5,13 @@ spring:
     import: optional:file:./application-local.yml
 
   datasource:
-    # Em produção (ex.: Render): defina DATABASE_URL exatamente como no Supabase, por exemplo:
-    #   postgresql://postgres:SENHA@db.<ref>.supabase.co:5432/postgres
-    # (substitua SENHA; caracteres especiais na senha → URL-encode). Isso é convertido para JDBC no main.
-    # Opcional: SPRING_DATASOURCE_URL em jdbc:postgresql://...?sslmode=require OU no mesmo formato URI acima.
-    # Se "Network is unreachable" ou UnknownHost no db.*.supabase.co: no Render use pooler (Session) ou IPv4 no Supabase.
-    # Confira no painel se o <ref> do host bate com o projeto (projeto pausado/apagado → DNS some).
-    # Abaixo: JDBC só para fallback local; o env DATABASE_URL tem precedência (DatabaseUrlEnvironmentSetup).
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://db.rzvdnjmwffvlqxkbhres.supabase.co:5432/postgres?sslmode=require}
+    # Render: defina SPRING_DATASOURCE_URL (jdbc:postgresql://...) e credenciais nas env vars.
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/postgres}
     username: ${SPRING_DATASOURCE_USERNAME:postgres}
-    password: ${SPRING_DATASOURCE_PASSWORD:16Q2amsxfJVPmB5L}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
     driver-class-name: org.postgresql.Driver
 
   jpa:
-    # Obrigatório quando o Hibernate não consegue ler metadados JDBC na subida (ex.: falha de rede);
-    # sem isso: "Unable to determine Dialect without JDBC metadata".
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
       ddl-auto: update
@@ -30,7 +22,6 @@ spring:
     show-sql: false
 
 server:
-  # Render injeta PORT
   port: ${PORT:8080}
 
 springdoc:
@@ -50,9 +41,7 @@ app:
     reenvio-ms: 3600000
     expiracao-ms: 600000
 
-  # WhatsApp: mock | twilio (credenciais em variáveis ou application-local.yml)
   bot:
-    # Se preenchido, POST /api/bot/disparar-boas-vindas exige header X-Bot-Key com o mesmo valor
     disparo-api-key: ${BOT_DISPARO_API_KEY:}
 
   whatsapp:
@@ -60,10 +49,8 @@ app:
     twilio:
       account-sid: ${TWILIO_ACCOUNT_SID:}
       auth-token: ${TWILIO_AUTH_TOKEN:}
-      # Sandbox: whatsapp:+14155238886 | produção: seu número aprovado pela Meta/Twilio
       from-number: ${TWILIO_WHATSAPP_FROM:}
 
-  # Omie: use variáveis de ambiente ou application-local.yml (gitignore). Nunca commite app-key/app-secret.
   omie:
     enabled: false
     app-key: ${OMIE_APP_KEY:}
@@ -71,7 +58,5 @@ app:
     base-url: https://app.omie.com.br/api/v1
     pedido-compra-path: /produtos/pedidocompra/
     pedido-compra:
-      # nCodFor do fornecedor no Omie (obrigatório quando enabled=true)
       fornecedor-codigo: ${OMIE_N_COD_FOR:}
-      # nCodCC opcional; se vazio, enviamos 0 no cabeçalho
       conta-corrente-codigo: ${OMIE_N_COD_CC:}

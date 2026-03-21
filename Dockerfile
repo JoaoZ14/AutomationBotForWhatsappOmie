@@ -1,24 +1,18 @@
-# Estágio 1: build (Maven + JDK 17, Alpine)
-FROM maven:3.9-eclipse-temurin-17-alpine AS build
+FROM maven:3.9-eclipse-temurin-17 AS build
+
 WORKDIR /app
 
 COPY pom.xml .
-RUN mvn dependency:go-offline -B
-
 COPY src ./src
-RUN mvn package -DskipTests -B
 
-# Estágio 2: execução
-FROM eclipse-temurin:17-jre-alpine
+RUN mvn clean package -DskipTests
+
+FROM eclipse-temurin:17-jre-jammy
+
 WORKDIR /app
 
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
-USER appuser
+COPY --from=build /app/target/automation-bot-0.0.1-SNAPSHOT.jar .
 
-# JAR executável (não usar *: existe também *-plain.jar)
-COPY --from=build /app/target/automation-bot-0.0.1-SNAPSHOT.jar app.jar
-
-# Render define PORT; EXPOSE só documenta
 EXPOSE 8080
 
-ENTRYPOINT ["java", "-jar", "app.jar"]
+CMD ["java", "-XX:+UseContainerSupport", "-XX:MaxRAMPercentage=70.0", "-XX:+UseG1GC", "-XX:MaxGCPauseMillis=200", "-XX:+ExitOnOutOfMemoryError", "-Djava.security.egd=file:/dev/./urandom", "-jar", "automation-bot-0.0.1-SNAPSHOT.jar"]
