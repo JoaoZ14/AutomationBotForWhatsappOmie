@@ -5,25 +5,26 @@ spring:
     import: optional:file:./application-local.yml
 
   datasource:
-    # Seu servidor já estava certo na intenção; o driver Java só aceita jdbc:postgresql:// (não postgresql://).
-    # Supabase precisa de sslmode=require na URL.
+    # URL efetiva: DatabaseUrlEnvironmentSetup corre no main (trata SPRING_DATASOURCE_URL vazia no Render).
     url: jdbc:postgresql://db.rzvdnjmwffvlqxkbhres.supabase.co:5432/postgres?sslmode=require
-    username: postgres
-    # Senha: variável SPRING_DATASOURCE_PASSWORD ou spring.datasource.password em application-local.yml (raiz, gitignore)
-    password: ${SPRING_DATASOURCE_PASSWORD:16Q2amsxfJVPmB5L}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
     driver-class-name: org.postgresql.Driver
 
   jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
       ddl-auto: update
     open-in-view: false
     properties:
       hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
     show-sql: false
 
 server:
-  port: 8080
+  # Render injeta PORT
+  port: ${PORT:8080}
 
 springdoc:
   api-docs:
