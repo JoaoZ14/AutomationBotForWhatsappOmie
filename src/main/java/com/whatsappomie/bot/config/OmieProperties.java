@@ -12,8 +12,13 @@ public class OmieProperties {
     private String appSecret = "";
     private String baseUrl = "https://app.omie.com.br/api/v1";
     private String pedidoCompraPath = "/produtos/pedidocompra/";
+    private String produtosPath = "/geral/produtos/";
 
     private final PedidoCompra pedidoCompra = new PedidoCompra();
+
+    public boolean isCredenciaisPreenchidas() {
+        return enabled && !appKey.isBlank() && !appSecret.isBlank();
+    }
 
     public boolean isChamadaHttpAtiva() {
         return enabled
@@ -67,9 +72,25 @@ public class OmieProperties {
     }
 
     public String urlPedidoCompra() {
+        return buildUrl(pedidoCompraPath);
+    }
+
+    public String urlProdutos() {
+        return buildUrl(produtosPath);
+    }
+
+    private String buildUrl(String pathSegment) {
         String base = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
-        String path = pedidoCompraPath.startsWith("/") ? pedidoCompraPath : "/" + pedidoCompraPath;
+        String path = pathSegment.startsWith("/") ? pathSegment : "/" + pathSegment;
         return base + path;
+    }
+
+    public String getProdutosPath() {
+        return produtosPath;
+    }
+
+    public void setProdutosPath(String produtosPath) {
+        this.produtosPath = produtosPath;
     }
 
     public static class PedidoCompra {

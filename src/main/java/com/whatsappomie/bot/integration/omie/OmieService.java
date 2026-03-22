@@ -1,12 +1,14 @@
 package com.whatsappomie.bot.integration.omie;
 
 import com.whatsappomie.bot.config.OmieProperties;
+import com.whatsappomie.bot.dto.ProdutoCatalogoDto;
 import com.whatsappomie.bot.dto.omie.OmiePedidoCompraRequest;
 import com.whatsappomie.bot.dto.omie.OmiePedidoItemRequest;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,8 +16,10 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -182,5 +186,92 @@ public class OmieService {
             return 0.0;
         }
         return valor.doubleValue();
+    }
+
+    /**
+     * Lista produtos cadastrados na Omie via API ListarProdutos.
+     * Retorna lista vazia se Omie desabilitado ou credenciais ausentes.
+     */
+    public List<ProdutoCatalogoDto> listarProdutos(int pagina, int registrosPorPagina) {
+        if (!properties.isCredenciaisPreenchidas()) {
+            log.debug("[Omie] ListarProdutos não executado: credenciais ausentes ou enabled=false");
+            return Collections.emptyList();
+        }
+
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("call", "ListarProdutos");
+        body.put("app_key", properties.getAppKey());
+        body.put("app_secret", properties.getAppSecret());
+        body.put(
+                "param",
+                List.of(Map.of(
+                        "pagina", pagina,
+                        "registros_por_pagina", registrosPorPagina,
+                        "apenas_importado_api", "N",
+                        "filtrar_apenas_omiepdv", "N")));
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
+        String url = properties.urlProdutos();
+
+        try {
+            ResponseEntity<Map<String, Object>> resp = restTemplate.exchange(
+                    url,
+                    HttpMethod.POST,
+                    entity,
+                    new ParameterizedTypeReference<Map<String, Object>>() {});
+            return extrairProdutosDaResposta(resp.getBody());
+        } catch (HttpStatusCodeException e) {
+            log.error("[Omie] Erro ListarProdutos status={} body={}", e.getStatusCode(), e.getResponseBodyAsString());
+            return Collections.emptyList();
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<ProdutoCatalogoDto> extrairProdutosDaResposta(Map<String, Object> body) {
+        if (body == null) {
+            return Collections.emptyList();
+        }
+        Object arr = body.get("produto_servico_cadastro");
+        if (!(arr instanceof List<?>)) {
+            return Collections.emptyList();
+        }
+        List<?> lista = (List<?>) arr;
+        List<ProdutoCatalogoDto> resultado = new ArrayList<>();
+        for (Object item : lista) {
+            if (!(item instanceof Map)) {
+                continue;
+            }
+            @SuppressWarnings("unchecked")
+            Map<String, Object> prod = (Map<String, Object>) item;
+            String codigo = stringOrEmpty(prod.get("codigo"));
+            Object codigoProdutoObj = prod.get("codigo_produto");
+            String codigoProdutoOmie = codigoProdutoObj != null ? String.valueOf(codigoProdutoObj) : codigo;
+            String descricao = stringOrEmpty(prod.get("descricao"));
+            BigDecimal valor = toBigDecimal(prod.get("valor_unitario"));
+            if (!codigo.isBlank() || !descricao.isBlank()) {
+                resultado.add(new ProdutoCatalogoDto(codigo, codigoProdutoOmie, descricao, valor));
+            }
+        }
+        return resultado;
+    }
+
+    private static String stringOrEmpty(Object o) {
+        return o != null ? o.toString().trim() : "";
+    }
+
+    private static BigDecimal toBigDecimal(Object o) {
+        if (o == null) {
+            return BigDecimal.ZERO;
+        }
+        if (o instanceof Number) {
+            return BigDecimal.valueOf(((Number) o).doubleValue());
+        }
+        try {
+            return new BigDecimal(o.toString());
+        } catch (NumberFormatException e) {
+            return BigDecimal.ZERO;
+        }
     }
 }

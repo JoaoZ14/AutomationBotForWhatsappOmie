@@ -51,9 +51,9 @@ app:
       from-number: ${TWILIO_WHATSAPP_FROM:}
 
   omie:
-    enabled: false
-    app-key: ${OMIE_APP_KEY:}
-    app-secret: ${OMIE_APP_SECRET:}
+    enabled: true
+    app-key: ${OMIE_APP_KEY}
+    app-secret: ${OMIE_APP_SECRET}
     base-url: https://app.omie.com.br/api/v1
     pedido-compra-path: /produtos/pedidocompra/
     pedido-compra:

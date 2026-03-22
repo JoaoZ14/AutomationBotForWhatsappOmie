@@ -5,15 +5,22 @@ import java.math.BigDecimal;
 public class ProdutoCatalogoDto {
 
     private String codigo;
+    /** Código usado na API Omie (codigo_produto). Se vazio, usa {@link #codigo}. */
+    private String codigoProdutoOmie;
     private String descricao;
     private BigDecimal valorUnitario;
 
     public ProdutoCatalogoDto() {}
 
     public ProdutoCatalogoDto(String codigo, String descricao, BigDecimal valorUnitario) {
+        this(codigo, codigo, descricao, valorUnitario);
+    }
+
+    public ProdutoCatalogoDto(String codigo, String codigoProdutoOmie, String descricao, BigDecimal valorUnitario) {
         this.codigo = codigo;
+        this.codigoProdutoOmie = codigoProdutoOmie != null ? codigoProdutoOmie : codigo;
         this.descricao = descricao;
-        this.valorUnitario = valorUnitario;
+        this.valorUnitario = valorUnitario != null ? valorUnitario : BigDecimal.ZERO;
     }
 
     public String getCodigo() {
@@ -22,6 +29,17 @@ public class ProdutoCatalogoDto {
 
     public void setCodigo(String codigo) {
         this.codigo = codigo;
+    }
+
+    public String getCodigoProdutoOmie() {
+        if (codigoProdutoOmie != null && !codigoProdutoOmie.isBlank()) {
+            return codigoProdutoOmie;
+        }
+        return codigo != null ? codigo : "";
+    }
+
+    public void setCodigoProdutoOmie(String codigoProdutoOmie) {
+        this.codigoProdutoOmie = codigoProdutoOmie;
     }
 
     public String getDescricao() {

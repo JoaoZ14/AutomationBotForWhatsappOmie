@@ -181,7 +181,8 @@ public class ConversationService {
 
     private void processarAguardandoProduto(Atendimento atendimento, String mensagem) {
         Optional<ProdutoCatalogoDto> produto = produtoService.listarProdutos().stream()
-                .filter(p -> p.getCodigo().equalsIgnoreCase(mensagem))
+                .filter(p -> matchesCodigo(p.getCodigo(), mensagem)
+                        || matchesCodigo(p.getCodigoProdutoOmie(), mensagem))
                 .findFirst();
         if (produto.isEmpty()) {
             whatsAppService.enviarMensagem(
@@ -190,8 +191,8 @@ public class ConversationService {
         }
         Cliente cliente = clienteService.obterOuCriarPorTelefone(atendimento.getTelefone());
         Long pedidoId = obterOuCriarPedidoId(atendimento, cliente.getId());
-        String codigo = produto.get().getCodigo();
-        atendimento.setContextoJson(contextoPedidoECodigo(pedidoId, codigo));
+        String codigoOmie = produto.get().getCodigoProdutoOmie();
+        atendimento.setContextoJson(contextoPedidoECodigo(pedidoId, codigoOmie));
         atendimentoService.salvar(atendimento);
         atendimentoService.atualizarStatus(atendimento, StatusAtendimento.AGUARDANDO_QUANTIDADE);
         whatsAppService.enviarMensagem(
@@ -211,15 +212,16 @@ public class ConversationService {
         }
         Long pedidoId = extrairPedidoId(atendimento.getContextoJson())
                 .orElseThrow(() -> new IllegalStateException("contexto sem pedidoId"));
-        String codigo = extrairCodigoProduto(atendimento.getContextoJson())
+        String codigoOmie = extrairCodigoProduto(atendimento.getContextoJson())
                 .orElseThrow(() -> new IllegalStateException("contexto sem codigoProduto"));
         ProdutoCatalogoDto produto = produtoService.listarProdutos().stream()
-                .filter(p -> p.getCodigo().equalsIgnoreCase(codigo))
+                .filter(p -> matchesCodigo(p.getCodigoProdutoOmie(), codigoOmie)
+                        || matchesCodigo(p.getCodigo(), codigoOmie))
                 .findFirst()
-                .orElseThrow(() -> new IllegalStateException("produto não encontrado no catálogo: " + codigo));
+                .orElseThrow(() -> new IllegalStateException("produto não encontrado no catálogo: " + codigoOmie));
 
         pedidoService.adicionarItem(
-                pedidoId, produto.getCodigo(), produto.getDescricao(), qtd, produto.getValorUnitario());
+                pedidoId, produto.getCodigoProdutoOmie(), produto.getDescricao(), qtd, produto.getValorUnitario());
         atendimentoService.atualizarStatus(atendimento, StatusAtendimento.AGUARDANDO_CONFIRMACAO_PEDIDO);
         whatsAppService.enviarMensagem(
                 atendimento.getTelefone(),
@@ -323,6 +325,10 @@ public class ConversationService {
     private boolean respostaSim(String mensagem) {
         String m = mensagem.toLowerCase();
         return m.equals("sim") || m.equals("s") || m.equals("ok") || m.equals("👍");
+    }
+
+    private static boolean matchesCodigo(String codigo, String input) {
+        return codigo != null && input != null && codigo.equalsIgnoreCase(input);
     }
 
 }
