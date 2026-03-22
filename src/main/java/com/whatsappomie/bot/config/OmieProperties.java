@@ -40,7 +40,7 @@ public class OmieProperties {
     }
 
     public void setAppKey(String appKey) {
-        this.appKey = appKey;
+        this.appKey = appKey != null ? appKey.trim() : "";
     }
 
     public String getAppSecret() {
@@ -48,7 +48,7 @@ public class OmieProperties {
     }
 
     public void setAppSecret(String appSecret) {
-        this.appSecret = appSecret;
+        this.appSecret = appSecret != null ? appSecret.trim() : "";
     }
 
     public String getBaseUrl() {

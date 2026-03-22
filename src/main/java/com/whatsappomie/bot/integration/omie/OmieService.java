@@ -211,7 +211,7 @@ public class OmieService {
                         "filtrar_apenas_omiepdv", "N")));
 
         HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setContentType(MediaType.parseMediaType("application/json; charset=UTF-8"));
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
         String url = properties.urlProdutos();
 
@@ -223,7 +223,11 @@ public class OmieService {
                     new ParameterizedTypeReference<Map<String, Object>>() {});
             return extrairProdutosDaResposta(resp.getBody());
         } catch (HttpStatusCodeException e) {
-            log.error("[Omie] Erro ListarProdutos status={} body={}", e.getStatusCode(), e.getResponseBodyAsString());
+            log.error(
+                    "[Omie] Erro ListarProdutos status={} body={} (appKey presente: {})",
+                    e.getStatusCode(),
+                    e.getResponseBodyAsString(),
+                    !properties.getAppKey().isBlank());
             return Collections.emptyList();
         }
     }
