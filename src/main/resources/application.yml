@@ -7,9 +7,9 @@ spring:
   datasource:
     # Prioriza URL JDBC explícita; DATABASE_URL fica como fallback.
     # Em alguns hosts, DATABASE_URL vem como postgres://..., que não é formato JDBC.
-    url: ${SPRING_DATASOURCE_URL:${DATABASE_URL:jdbc:postgresql://db.rzvdnjmwffvlqxkbhres.supabase.co:6543/postgres?sslmode=require&prepareThreshold=0}}
-    username: ${SPRING_DATASOURCE_USERNAME:${DATABASE_USERNAME:postgres}}
-    password: ${SPRING_DATASOURCE_PASSWORD:${DATABASE_PASSWORD:}}
+    url: ${SPRING_DATASOURCE_URL:${DATABASE_URL}}
+    username: ${SPRING_DATASOURCE_USERNAME:${DATABASE_USERNAME}}
+    password: ${SPRING_DATASOURCE_PASSWORD:${DATABASE_PASSWORD}}
 
   jpa:
     hibernate:
