@@ -44,10 +44,27 @@ public class BotDisparoController {
             @Valid @RequestBody DisparoBoasVindasRequest body) {
         if (!botApiProperties.autorizarDisparo(botKey)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("erro", "X-Bot-Key inválido ou ausente"));
+                    .body(Map.of("erro", "X-Bot-Key inválido ou ausente. Se BOT_DISPARO_API_KEY estiver definido, envie o header X-Bot-Key com o mesmo valor."));
         }
         conversationService.dispararMensagemInicial(body.getTelefone());
         return ResponseEntity.ok(Map.of("mensagem", "Boas-vindas enviadas; aguardando resposta do cliente."));
+    }
+
+    @Operation(
+            summary = "Disparar catálogo de produtos para teste",
+            description =
+                    "Envia diretamente o catálogo de produtos no WhatsApp (Twilio), sem avançar estado de atendimento. "
+                            + "Header X-Bot-Key obrigatorio apenas se app.bot.disparo-api-key estiver configurado.")
+    @PostMapping("/disparar-catalogo-teste")
+    public ResponseEntity<Map<String, String>> dispararCatalogoTeste(
+            @RequestHeader(value = "X-Bot-Key", required = false) String botKey,
+            @Valid @RequestBody DisparoBoasVindasRequest body) {
+        if (!botApiProperties.autorizarDisparo(botKey)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("erro", "X-Bot-Key inválido ou ausente. Se BOT_DISPARO_API_KEY estiver definido, envie o header X-Bot-Key com o mesmo valor."));
+        }
+        conversationService.dispararCatalogoTeste(body.getTelefone());
+        return ResponseEntity.ok(Map.of("mensagem", "Catálogo enviado para teste no WhatsApp."));
     }
 
     @ExceptionHandler(IllegalArgumentException.class)

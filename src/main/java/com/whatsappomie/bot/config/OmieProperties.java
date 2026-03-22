@@ -5,15 +5,17 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "app.omie")
 public class OmieProperties {
 
-    /** Quando true e credenciais/pedido-compra preenchidos, envia HTTP real. */
+    /** Quando true e credenciais preenchidas, envia HTTP real. */
     private boolean enabled = false;
 
     private String appKey = "";
     private String appSecret = "";
     private String baseUrl = "https://app.omie.com.br/api/v1";
+    private String pedidoPath = "/produtos/pedido/";
     private String pedidoCompraPath = "/produtos/pedidocompra/";
     private String produtosPath = "/geral/produtos/";
 
+    private final Pedido pedido = new Pedido();
     private final PedidoCompra pedidoCompra = new PedidoCompra();
 
     public boolean isCredenciaisPreenchidas() {
@@ -23,8 +25,7 @@ public class OmieProperties {
     public boolean isChamadaHttpAtiva() {
         return enabled
                 && !appKey.isBlank()
-                && !appSecret.isBlank()
-                && !pedidoCompra.getFornecedorCodigo().isBlank();
+                && !appSecret.isBlank();
     }
 
     public boolean isEnabled() {
@@ -59,6 +60,18 @@ public class OmieProperties {
         this.baseUrl = baseUrl;
     }
 
+    public String getPedidoPath() {
+        return pedidoPath;
+    }
+
+    public void setPedidoPath(String pedidoPath) {
+        this.pedidoPath = pedidoPath;
+    }
+
+    public Pedido getPedido() {
+        return pedido;
+    }
+
     public String getPedidoCompraPath() {
         return pedidoCompraPath;
     }
@@ -69,6 +82,10 @@ public class OmieProperties {
 
     public PedidoCompra getPedidoCompra() {
         return pedidoCompra;
+    }
+
+    public String urlPedido() {
+        return buildUrl(pedidoPath);
     }
 
     public String urlPedidoCompra() {
@@ -91,6 +108,59 @@ public class OmieProperties {
 
     public void setProdutosPath(String produtosPath) {
         this.produtosPath = produtosPath;
+    }
+
+    public static class Pedido {
+        /** Código fixo de cliente Omie (opcional, uso temporário). */
+        private String codigoCliente = "";
+        /** Etapa do pedido de venda Omie. */
+        private String etapa = "10";
+        /** Código da parcela Omie. */
+        private String codigoParcela = "999";
+        /** Código da categoria financeira Omie (opcional). */
+        private String codigoCategoria = "";
+        /** Conta corrente Omie (opcional). */
+        private String contaCorrenteCodigo = "";
+
+        public String getCodigoCliente() {
+            return codigoCliente;
+        }
+
+        public void setCodigoCliente(String codigoCliente) {
+            this.codigoCliente = codigoCliente;
+        }
+
+        public String getEtapa() {
+            return etapa;
+        }
+
+        public void setEtapa(String etapa) {
+            this.etapa = etapa;
+        }
+
+        public String getCodigoParcela() {
+            return codigoParcela;
+        }
+
+        public void setCodigoParcela(String codigoParcela) {
+            this.codigoParcela = codigoParcela;
+        }
+
+        public String getCodigoCategoria() {
+            return codigoCategoria;
+        }
+
+        public void setCodigoCategoria(String codigoCategoria) {
+            this.codigoCategoria = codigoCategoria;
+        }
+
+        public String getContaCorrenteCodigo() {
+            return contaCorrenteCodigo;
+        }
+
+        public void setContaCorrenteCodigo(String contaCorrenteCodigo) {
+            this.contaCorrenteCodigo = contaCorrenteCodigo;
+        }
     }
 
     public static class PedidoCompra {

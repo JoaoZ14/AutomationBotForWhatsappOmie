@@ -10,7 +10,9 @@ import com.whatsappomie.bot.dto.omie.OmiePedidoItemRequest;
 import com.whatsappomie.bot.integration.omie.OmieService;
 import com.whatsappomie.bot.integration.whatsapp.WhatsAppService;
 import com.whatsappomie.bot.util.TelefoneNormalizer;
+import java.text.NumberFormat;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -23,6 +25,7 @@ public class ConversationService {
     private static final Pattern PEDIDO_ID_PATTERN = Pattern.compile("\"pedidoId\"\\s*:\\s*(\\d+)");
     private static final Pattern CODIGO_PRODUTO_PATTERN =
             Pattern.compile("\"codigoProduto\"\\s*:\\s*\"([^\"]+)\"");
+    private static final Locale LOCALE_PT_BR = Locale.forLanguageTag("pt-BR");
 
     private static final String MSG_BOAS_VINDAS_PEDIDO =
             "Bom dia! Deseja realizar seu pedido?\n\n1 - Sim\n2 - Não";
@@ -83,6 +86,15 @@ public class ConversationService {
             whatsAppService.enviarMensagem(atendimento.getTelefone(), MSG_BOAS_VINDAS_PEDIDO);
             atendimentoService.tocarUltimoContato(atendimento);
         }
+    }
+
+    @Transactional(readOnly = true)
+    public void dispararCatalogoTeste(String telefoneRaw) {
+        String tel = TelefoneNormalizer.paraE164(telefoneRaw.trim());
+        if (tel.isEmpty()) {
+            throw new IllegalArgumentException("Telefone inválido.");
+        }
+        enviarCatalogo(tel);
     }
 
     @Transactional
@@ -266,14 +278,30 @@ public class ConversationService {
 
     private void enviarCatalogo(String telefone) {
         List<ProdutoCatalogoDto> lista = produtoService.listarProdutos();
+        if (lista.isEmpty()) {
+            whatsAppService.enviarMensagem(
+                    telefone,
+                    "Não consegui carregar o catálogo agora. Tente novamente em instantes.");
+            return;
+        }
+
+        NumberFormat moeda = NumberFormat.getCurrencyInstance(LOCALE_PT_BR);
         StringBuilder sb = new StringBuilder("Catálogo (envie o código):\n");
-        lista.forEach(p -> sb.append(p.getCodigo())
+        lista.forEach(p -> sb.append(codigoExibicaoProduto(p))
                 .append(" - ")
                 .append(p.getDescricao())
-                .append(" (R$ ")
-                .append(p.getValorUnitario())
+                .append(" (")
+                .append(moeda.format(p.getValorUnitario()))
                 .append(")\n"));
         whatsAppService.enviarMensagem(telefone, sb.toString().trim());
+    }
+
+    private static String codigoExibicaoProduto(ProdutoCatalogoDto produto) {
+        String codigo = produto.getCodigo();
+        if (codigo != null && !codigo.isBlank()) {
+            return codigo;
+        }
+        return produto.getCodigoProdutoOmie();
     }
 
     private Long obterOuCriarPedidoId(Atendimento atendimento, Long clienteId) {

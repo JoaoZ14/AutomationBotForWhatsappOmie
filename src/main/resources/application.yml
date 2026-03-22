@@ -55,6 +55,13 @@ app:
     app-key: ${OMIE_APP_KEY}
     app-secret: ${OMIE_APP_SECRET}
     base-url: https://app.omie.com.br/api/v1
+    pedido-path: /produtos/pedido/
+    pedido:
+      codigo-cliente: ${OMIE_CODIGO_CLIENTE:}
+      etapa: ${OMIE_ETAPA:10}
+      codigo-parcela: ${OMIE_CODIGO_PARCELA:999}
+      codigo-categoria: ${OMIE_CODIGO_CATEGORIA:}
+      conta-corrente-codigo: ${OMIE_N_COD_CC:}
     pedido-compra-path: /produtos/pedidocompra/
     pedido-compra:
       fornecedor-codigo: ${OMIE_N_COD_FOR:}

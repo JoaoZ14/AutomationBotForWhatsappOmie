@@ -44,35 +44,34 @@ public class OmieService {
     public void criarPedidoOmie(OmiePedidoCompraRequest request) {
         if (!properties.isChamadaHttpAtiva()) {
             log.info(
-                    "[Omie mock] Payload preparado: codigoClienteOmie={}, itens={} (HTTP desligado: app.omie.enabled=false ou faltam credenciais/código fornecedor)",
+                    "[Omie mock] Payload preparado: codigoClienteOmie={}, itens={} (HTTP desligado: app.omie.enabled=false ou faltam credenciais)",
                     request.getCodigoClienteOmie(),
                     request.getItens() != null ? request.getItens().size() : 0);
             return;
         }
 
-        Map<String, Object> body = montarCorpoIncluirPedCompra(request);
+        Map<String, Object> body = montarCorpoIncluirPedido(request);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
-        String url = properties.urlPedidoCompra();
+        String url = properties.urlPedido();
 
         try {
-            log.info("[Omie] POST {} call=IncluirPedCompra cCodIntPed no param", url);
+            log.info("[Omie] POST {} call=IncluirPedido", url);
             ResponseEntity<String> resp = restTemplate.postForEntity(url, entity, String.class);
-            log.info("[Omie] Resposta IncluirPedCompra status={} body={}", resp.getStatusCode(), resp.getBody());
+            log.info("[Omie] Resposta IncluirPedido status={} body={}", resp.getStatusCode(), resp.getBody());
         } catch (HttpStatusCodeException e) {
             log.error(
-                    "[Omie] Erro IncluirPedCompra status={} body={}",
+                    "[Omie] Erro IncluirPedido status={} body={}",
                     e.getStatusCode(),
                     e.getResponseBodyAsString());
-            throw new IllegalStateException(
-                    "Falha ao incluir pedido de compra na Omie: HTTP " + e.getStatusCode(), e);
+            throw new IllegalStateException("Falha ao incluir pedido de venda na Omie: HTTP " + e.getStatusCode(), e);
         }
     }
 
-    private Map<String, Object> montarCorpoIncluirPedCompra(OmiePedidoCompraRequest request) {
+    private Map<String, Object> montarCorpoIncluirPedido(OmiePedidoCompraRequest request) {
         Map<String, Object> root = new LinkedHashMap<>();
-        root.put("call", "IncluirPedCompra");
+        root.put("call", "IncluirPedido");
         root.put("app_key", properties.getAppKey());
         root.put("app_secret", properties.getAppSecret());
         root.put("param", List.of(montarParamIncluir(request)));
@@ -81,35 +80,22 @@ public class OmieService {
 
     private Map<String, Object> montarParamIncluir(OmiePedidoCompraRequest request) {
         Map<String, Object> param = new LinkedHashMap<>();
-        param.put("cabecalho_incluir", montarCabecalhoIncluir(request));
-        param.put("frete_incluir", montarFreteIncluir());
-        param.put("produtos_incluir", montarProdutosIncluir(request.getItens()));
+        param.put("cabecalho", montarCabecalhoIncluir(request));
+        param.put("det", montarDetalhesItens(request.getItens()));
+        param.put("frete", montarFreteIncluir());
+        param.put("informacoes_adicionais", montarInformacoesAdicionais());
         return param;
     }
 
     private Map<String, Object> montarCabecalhoIncluir(OmiePedidoCompraRequest request) {
         Map<String, Object> cab = new LinkedHashMap<>();
-        cab.put("cCodIntPed", codigoIntegracaoPedido(request.getObservacoes()));
-        cab.put("dDtPrevisao", LocalDate.now().plusDays(7).format(DATA_PREVISAO));
-        cab.put("cCodParc", "999");
-        cab.put("nQtdeParc", 1);
-        cab.put("nCodFor", properties.getPedidoCompra().getFornecedorCodigo());
-        cab.put("cCodIntFor", "");
-        cab.put("cCodCateg", "");
-        cab.put("nCodCompr", 0);
-        cab.put("cContato", "");
-        cab.put("cContrato", "");
-        String cc = properties.getPedidoCompra().getContaCorrenteCodigo();
-        if (cc != null && !cc.isBlank()) {
-            cab.put("nCodCC", cc);
-        } else {
-            cab.put("nCodCC", 0);
-        }
-        cab.put("nCodIntCC", 0);
-        cab.put("nCodProj", 0);
-        cab.put("cNumPedido", "");
-        cab.put("cObs", request.getObservacoes() != null ? request.getObservacoes() : "");
-        cab.put("cObsInt", "Pedido via WhatsApp (automation-bot)");
+        cab.put("codigo_cliente", toLongOrZero(request.getCodigoClienteOmie()));
+        cab.put("codigo_pedido_integracao", codigoIntegracaoPedido(request.getObservacoes()));
+        cab.put("data_previsao", LocalDate.now().plusDays(7).format(DATA_PREVISAO));
+        cab.put("etapa", valorOuPadrao(properties.getPedido().getEtapa(), "10"));
+        cab.put("numero_pedido", "");
+        cab.put("codigo_parcela", valorOuPadrao(properties.getPedido().getCodigoParcela(), "999"));
+        cab.put("quantidade_itens", request.getItens() != null ? request.getItens().size() : 0);
         return cab;
     }
 
@@ -125,60 +111,51 @@ public class OmieService {
 
     private static Map<String, Object> montarFreteIncluir() {
         Map<String, Object> f = new LinkedHashMap<>();
-        f.put("nCodTransp", 0);
-        f.put("cCodIntTransp", "");
-        f.put("cTpFrete", "9");
-        f.put("cPlaca", "");
-        f.put("cUF", "");
-        f.put("nQtdVol", 0);
-        f.put("cEspVol", "");
-        f.put("cMarVol", "");
-        f.put("cNumVol", "");
-        f.put("nPesoLiq", 0.0);
-        f.put("nPesoBruto", 0.0);
-        f.put("nValFrete", 0.0);
-        f.put("nValSeguro", 0.0);
-        f.put("cLacre", "");
-        f.put("nValOutras", 0.0);
+        f.put("modalidade", "9");
         return f;
     }
 
-    private static List<Map<String, Object>> montarProdutosIncluir(List<OmiePedidoItemRequest> itens) {
+    private List<Map<String, Object>> montarDetalhesItens(List<OmiePedidoItemRequest> itens) {
         List<Map<String, Object>> lista = new ArrayList<>();
         if (itens == null) {
             return lista;
         }
         int seq = 1;
         for (OmiePedidoItemRequest item : itens) {
-            Map<String, Object> p = new LinkedHashMap<>();
-            p.put("cCodIntItem", "ITEM" + seq++);
-            p.put("cCodIntProd", "");
-            p.put("nCodProd", item.getCodigoProduto() != null ? item.getCodigoProduto() : "");
-            p.put("cProduto", "");
-            p.put("cDescricao", item.getDescricao() != null ? item.getDescricao() : "");
-            p.put("cNCM", "");
-            p.put("cUnidade", "");
-            p.put("cEAN", "");
-            p.put("nPesoLiq", 0);
-            p.put("nPesoBruto", 0);
+            Map<String, Object> ide = new LinkedHashMap<>();
+            ide.put("codigo_item_integracao", "ITEM" + seq++);
+
+            Map<String, Object> produto = new LinkedHashMap<>();
+            produto.put("codigo_produto", item.getCodigoProduto() != null ? item.getCodigoProduto() : "");
+            produto.put("descricao", item.getDescricao() != null ? item.getDescricao() : "");
             Integer qtd = item.getQuantidade();
-            p.put("nQtde", qtd != null ? qtd : 0);
-            p.put("nValUnit", valorUnitarioOmie(item.getValorUnitario()));
-            p.put("nDesconto", 0.0);
-            p.put("nValorIcms", 0.0);
-            p.put("nValorSt", 0.0);
-            p.put("nValorIpi", 0.0);
-            p.put("nValorPis", 0.0);
-            p.put("nValorCofins", 0.0);
-            p.put("cObs", "");
-            p.put("cMkpAtuPv", "N");
-            p.put("cMkpAtuSm", "N");
-            p.put("nMkpPerc", 0);
-            p.put("codigo_local_estoque", "");
-            p.put("cCodCateg", "");
-            lista.add(p);
+            produto.put("quantidade", qtd != null ? qtd : 0);
+            produto.put("valor_unitario", valorUnitarioOmie(item.getValorUnitario()));
+            produto.put("tipo_desconto", "V");
+            produto.put("valor_desconto", 0.0);
+            produto.put("unidade", "UN");
+
+            Map<String, Object> det = new LinkedHashMap<>();
+            det.put("ide", ide);
+            det.put("produto", produto);
+            lista.add(det);
         }
         return lista;
+    }
+
+    private Map<String, Object> montarInformacoesAdicionais() {
+        Map<String, Object> info = new LinkedHashMap<>();
+        String categoria = properties.getPedido().getCodigoCategoria();
+        if (categoria != null && !categoria.isBlank()) {
+            info.put("codigo_categoria", categoria);
+        }
+        String contaCorrente = properties.getPedido().getContaCorrenteCodigo();
+        if (contaCorrente != null && !contaCorrente.isBlank()) {
+            info.put("codigo_conta_corrente", toLongOrZero(contaCorrente));
+        }
+        info.put("consumidor_final", "S");
+        info.put("enviar_email", "N");
+        return info;
     }
 
     private static double valorUnitarioOmie(BigDecimal valor) {
@@ -186,6 +163,24 @@ public class OmieService {
             return 0.0;
         }
         return valor.doubleValue();
+    }
+
+    private static long toLongOrZero(String value) {
+        if (value == null || value.isBlank()) {
+            return 0L;
+        }
+        try {
+            return Long.parseLong(value.trim());
+        } catch (NumberFormatException ex) {
+            return 0L;
+        }
+    }
+
+    private static String valorOuPadrao(String valor, String padrao) {
+        if (valor == null || valor.isBlank()) {
+            return padrao;
+        }
+        return valor;
     }
 
     /**
@@ -232,6 +227,49 @@ public class OmieService {
         }
     }
 
+    /**
+     * Lista pedidos de venda cadastrados na Omie via API ListarPedidos.
+     * Retorna lista vazia se Omie desabilitado, credenciais ausentes ou erro HTTP.
+     */
+    public List<Map<String, Object>> listarPedidos(int pagina, int registrosPorPagina) {
+        if (!properties.isCredenciaisPreenchidas()) {
+            log.debug("[Omie] ListarPedidos não executado: credenciais ausentes ou enabled=false");
+            return Collections.emptyList();
+        }
+
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("call", "ListarPedidos");
+        body.put("app_key", properties.getAppKey());
+        body.put("app_secret", properties.getAppSecret());
+        body.put(
+                "param",
+                List.of(Map.of(
+                        "pagina", pagina,
+                        "registros_por_pagina", registrosPorPagina,
+                        "apenas_importado_api", "N")));
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType("application/json; charset=UTF-8"));
+        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
+        String url = properties.urlPedido();
+
+        try {
+            ResponseEntity<Map<String, Object>> resp = restTemplate.exchange(
+                    url,
+                    HttpMethod.POST,
+                    entity,
+                    new ParameterizedTypeReference<Map<String, Object>>() {});
+            return extrairPedidosDaResposta(resp.getBody());
+        } catch (HttpStatusCodeException e) {
+            log.error(
+                    "[Omie] Erro ListarPedidos status={} body={} (appKey presente: {})",
+                    e.getStatusCode(),
+                    e.getResponseBodyAsString(),
+                    !properties.getAppKey().isBlank());
+            return Collections.emptyList();
+        }
+    }
+
     @SuppressWarnings("unchecked")
     private List<ProdutoCatalogoDto> extrairProdutosDaResposta(Map<String, Object> body) {
         if (body == null) {
@@ -252,10 +290,45 @@ public class OmieService {
             String codigo = stringOrEmpty(prod.get("codigo"));
             Object codigoProdutoObj = prod.get("codigo_produto");
             String codigoProdutoOmie = codigoProdutoObj != null ? String.valueOf(codigoProdutoObj) : codigo;
+            if (codigo.isBlank()) {
+                codigo = codigoProdutoOmie;
+            }
             String descricao = stringOrEmpty(prod.get("descricao"));
             BigDecimal valor = toBigDecimal(prod.get("valor_unitario"));
             if (!codigo.isBlank() || !descricao.isBlank()) {
                 resultado.add(new ProdutoCatalogoDto(codigo, codigoProdutoOmie, descricao, valor));
+            }
+        }
+        return resultado;
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Map<String, Object>> extrairPedidosDaResposta(Map<String, Object> body) {
+        if (body == null) {
+            return Collections.emptyList();
+        }
+
+        Object arr = body.get("pedido_venda_produto");
+        if (!(arr instanceof List<?>)) {
+            arr = body.get("pedidos");
+        }
+        if (!(arr instanceof List<?>)) {
+            arr = body.get("pedido");
+        }
+        if (!(arr instanceof List<?> lista)) {
+            return Collections.emptyList();
+        }
+
+        List<Map<String, Object>> resultado = new ArrayList<>();
+        for (Object item : lista) {
+            if (item instanceof Map<?, ?> mapItem) {
+                Map<String, Object> pedido = new LinkedHashMap<>();
+                for (Map.Entry<?, ?> entry : mapItem.entrySet()) {
+                    if (entry.getKey() != null) {
+                        pedido.put(String.valueOf(entry.getKey()), entry.getValue());
+                    }
+                }
+                resultado.add(pedido);
             }
         }
         return resultado;
@@ -273,7 +346,15 @@ public class OmieService {
             return BigDecimal.valueOf(((Number) o).doubleValue());
         }
         try {
-            return new BigDecimal(o.toString());
+            String valor = o.toString().trim();
+            if (valor.isEmpty()) {
+                return BigDecimal.ZERO;
+            }
+            // Omie pode retornar decimal com vírgula (pt-BR) ou ponto.
+            if (valor.contains(",")) {
+                valor = valor.replace(".", "").replace(",", ".");
+            }
+            return new BigDecimal(valor);
         } catch (NumberFormatException e) {
             return BigDecimal.ZERO;
         }

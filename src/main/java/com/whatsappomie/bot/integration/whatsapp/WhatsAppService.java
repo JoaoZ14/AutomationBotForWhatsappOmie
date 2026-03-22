@@ -30,7 +30,9 @@ public class WhatsAppService {
     public void enviarMensagem(String telefone, String mensagem) {
         if (!properties.isTwilioConfigurado()) {
             log.warn(
-                    "[WhatsApp MOCK] Nada foi enviado ao celular. provider={} - defina WHATSAPP_PROVIDER=twilio e credenciais Twilio. Texto que seria enviado para {} : {}",
+                    "[WhatsApp MOCK] Mensagem NÃO enviada. provider={} twilioConfigurado=false. "
+                            + "Configure WHATSAPP_PROVIDER=twilio, TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_WHATSAPP_FROM. "
+                            + "Destino: {} | Texto: {}",
                     properties.getProvider(),
                     telefone,
                     mensagem);
